@@ -15,6 +15,20 @@ graph = [[0, 0, 0, 0, 0, 0],
           [0, 1, 1, 1, 1, 1],
           [0, 0, 0, 0, 0, 0]]
 
+graph4 = [[0, 0, 1, 1, 1, 1],
+          [0, 0, 0, 0, 0, 0],
+          [0, 1, 1, 1, 1, 0],
+          [0, 1, 0, 0, 0, 0],
+          [0, 1, 0, 1, 1, 1],
+          [0, 1, 0, 0, 0, 0]]
+
+graph3 = [[0,0],
+          [0,0]]
+
+graph5 = [[0,0,0],
+          [0,0,0]]
+graph2 = [[0, 1, 1, 0], [0, 0, 0, 1], [1, 1, 0, 0], [1, 1, 1, 0]]
+
 def getANodes(graph,point):
     validPaths = []
     width = len(graph[0]) - 1
@@ -50,9 +64,9 @@ def bfs(graph,start,end):
             counter = 0
             while val != str(start):
                 val = pred.get(val)
-                print(val)
+                # print(val)
                 counter += 1
-            return counter
+            return counter + 1
         neighbhours = getANodes(graph,s)
 
         for neighbhour in neighbhours:
@@ -61,7 +75,7 @@ def bfs(graph,start,end):
                 visited.append(neighbhour)
                 queue.append(neighbhour)
         previous.append(s)
-    print(pred)
+    # print(pred)
 
 
 
@@ -69,14 +83,24 @@ def solution(graph):
     start = (len(graph)-1,len(graph[0])-1)
     end = (0,0)
     bestRoute = 1000
+    wallFound = False
+    if(len(graph)) == 2 and len(graph[0])==2:
+        return 2
     for row in range(len(graph)):
         for column in range(len(graph[row])):
             if graph[row][column] == 1:
+                wallFound = True
                 tempGraph = graph
                 tempGraph[row][column] = 0
                 tempBestRoute = bfs(tempGraph,start,end)
                 if tempBestRoute < bestRoute:
                     bestRoute = tempBestRoute
+    if not wallFound:
+        bestRoute = bfs(graph, start, end)
     return bestRoute
 
 print(solution(graph))
+print(solution(graph2))
+print(solution(graph3))
+print(solution(graph4))
+print(solution(graph5))
