@@ -101,8 +101,8 @@ def bfs(graph,start,end):
     return 1000
 
 def solution(graph):
-    start = (len(graph)-1,len(graph[0])-1)
-    end = (0,0)
+    end = (len(graph)-1,len(graph[0])-1)
+    start = (0,0)
     bestRoute = 1000
     wallFound = False
     if(len(graph)) == 2 and len(graph[0])==2:
@@ -111,11 +111,12 @@ def solution(graph):
         for column in range(len(graph[row])):
             if graph[row][column] == 1:
                 wallFound = True
-                tempGraph = graph
-                tempGraph[row][column] = 0
-                tempBestRoute = bfs(tempGraph,start,end)
+                # tempGraph = graph
+                graph[row][column] = 0
+                tempBestRoute = bfs(graph,start,end)
                 if tempBestRoute < bestRoute:
                     bestRoute = tempBestRoute
+                graph[row][column] = 1
     if not wallFound:
         bestRoute = bfs(graph, start, end)
     return bestRoute
