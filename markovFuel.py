@@ -41,25 +41,7 @@ def convertToCanonical(g,denoms):
     R = []
     numTransient = len(denoms) - denoms.count(1)
     # print(numTransient)
-    for i in range(len(g)):
-        trans = g[i][:numTransient]
 
-        g[i] = g[i][numTransient:] + trans
-    for i in range(len(denoms)):
-        if denoms[i] == 1:
-            canonM.append(g[i])
-    for i in range(len(denoms)):
-        if denoms[i] != 1:
-            canonM.append(g[i])
-
-    rows = canonM[len(canonM)-numTransient:]
-    for element in rows:
-        Q.append(element[-numTransient:])
-
-
-    for element in rows:
-        # print(element)
-        R.append(element[:len(element) - numTransient])
 
     # printMatrix(R)
     return canonM, Q, R
@@ -97,42 +79,39 @@ def subtractFromIdentity(M,I):
 
 # generateIdentityMatrix([[1,2],[3,4]])
 
-def transposeMatrix(m):
-    return map(list,zip(*m))
+def eliminate(r1, r2, col, target=0):
+    fac = (r2[col]-target) / r1[col]
+    for i in range(len(r2)):
+        r2[i] -= fac * r1[i]
 
-def getMatrixMinor(m,i,j):
-    return [row[:j] + row[j+1:] for row in (m[:i]+m[i+1:])]
+def gauss(a):
+    for i in range(len(a)):
+        if a[i][i] == 0:
+            for j in range(i+1, len(a)):
+                if a[i][j] != 0:
+                    a[i], a[j] = a[j], a[i]
+                    break
+            else:
+                raise ValueError("Matrix is not invertible")
+        for j in range(i+1, len(a)):
+            eliminate(a[i], a[j], i)
+    for i in range(len(a)-1, -1, -1):
+        for j in range(i-1, -1, -1):
+            eliminate(a[i], a[j], i)
+    for i in range(len(a)):
+        eliminate(a[i], a[i], i, target=1)
+    return a
 
-def getMatrixDeternminant(m):
-    #base case for 2x2 matrix
-    if len(m) == 2:
-        return m[0][0]*m[1][1]-m[0][1]*m[1][0]
-
-    determinant = 0
-    for c in range(len(m)):
-        determinant += ((-1)**c)*m[0][c]*getMatrixDeternminant(getMatrixMinor(m,0,c))
-    return determinant
-
-def getMatrixInverse(m):
-    determinant = getMatrixDeternminant(m)
-    #special case for 2x2 matrix:
-    if len(m) == 2:
-        return [[m[1][1]/determinant, -1*m[0][1]/determinant],
-                [-1*m[1][0]/determinant, m[0][0]/determinant]]
-
-    #find matrix of cofactors
-    cofactors = []
-    for r in range(len(m)):
-        cofactorRow = []
-        for c in range(len(m)):
-            minor = getMatrixMinor(m,r,c)
-            cofactorRow.append(((-1)**(r+c)) * getMatrixDeternminant(minor))
-        cofactors.append(cofactorRow)
-    cofactors = transposeMatrix(cofactors)
-    for r in range(len(list(cofactors))):
-        for c in range(len(list(cofactors))):
-            cofactors[r][c] = cofactors[r][c]/determinant
-    return cofactors
+def inverse(a):
+    tmp = [[] for _ in a]
+    for i,row in enumerate(a):
+        assert len(row) == len(a)
+        tmp[i].extend(row + [0]*i + [1] + [0]*(len(a)-i-1))
+    gauss(tmp)
+    ret = []
+    for i in range(len(tmp)):
+        ret.append(tmp[i][len(tmp[i])//2:])
+    return ret
 # printMatrix(convertToCanonical(fm,d))
 
 # def MM(X,Y):
@@ -170,13 +149,18 @@ def ensureCommonDenom(l):
 
 
 def solution(M):
+    if(len(M)) == 1:
+        return [1,1]
+
     #convert the matrix to a proper Markov chain matrix
     M, D = convertToFrac(M)
+    if D[0] == 1:
+        return [1]+[0]*(len(D)-1)+[1]
     #convert the matrix to cannonical form, extract the different quandrants. M = canonicla matrix, R = transient -> terminal prob matrix, TTM transient -> transient matrix
     CM, TTM, TTA = convertToCanonical(M,D)
     I = generateIdentityMatrix(TTM)
     temp = subtractFromIdentity(TTM,I)
-    temp = getMatrixInverse(temp)
+    temp = inverse(temp)
     SolutionMatrix = matrixMultiplication(temp,TTA)
 
     # printMatrix(SolutionMatrix)
@@ -189,3 +173,4 @@ def solution(M):
 
 
 print(solution(g))
+print(solution([[1]]))
