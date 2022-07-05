@@ -1,70 +1,5 @@
-# A: process probability matrix
-#     -Check for loops, identify loops
-#     -modify probability for each
-# B:calc probabilities
-# 1) find terminal states
-# 2) for each terminal state
-#     1: check for zero: look at each transient state, if no path for any transient, append 0
-#     2: multiply probabilities for each step in path
-#]
-from fractions import Fraction
+from fractions import Fraction, gcd
 
-
-g = [[0, 1, 0, 0, 0, 1],
-     [4, 0, 0, 3, 2, 0],
-     [0, 0, 0, 0, 0, 0],
-     [0, 0, 0, 0, 0, 0],
-     [0, 0, 0, 0, 0, 0],
-     [0, 0, 0, 0, 0, 0]]
-
-def convertToFrac(g):
-    FracMatrix = []
-    denoms = []
-    counter = 0
-    for row in g:
-        denom = sum(row)
-        denoms.append(denom)
-        rowToAdd = [Fraction(val,denom) if val > 0 else val for val in row ]
-        if denom == 0:
-            rowToAdd[counter] = 1
-            denoms[counter] = 1
-
-        FracMatrix.append(rowToAdd)
-        counter+=1
-
-    return FracMatrix,denoms
-
-def convertToCanonical(g,d):
-
-    absorbing = []
-    transient = []
-    # print(d)
-    for i in range(len(d)):
-        if d[i] == 1:
-            absorbing.append(i)
-        else:
-            transient.append(i)
-    matrixKey = absorbing+transient
-    standardM = []
-    for val in matrixKey:
-        standardM.append([0]*len(matrixKey))
-
-    for i in range(len(matrixKey)):
-        for j in range(len(matrixKey)):
-            standardM[i][j] = g[matrixKey[i]][matrixKey[j]]
-
-    return standardM, len(absorbing), len(transient)
-
-    # printMatrix(R)
-    return canonM, Q, R
-
-# def printMatrix(g):
-#     for row in g:
-#         for val in row:
-#             print val,
-#         print
-
-# printMatrix([[1,2,3],[4,5,6]])
 
 
 def generateIdentityMatrix(g):
@@ -85,8 +20,6 @@ def subtractFromIdentity(M,I):
             I[i][j] -= M[i][j]
 
     return I
-
-# generateIdentityMatrix([[1,2],[3,4]])
 
 def eliminate(r1, r2, col, target=0):
     fac = (r2[col]-target) / r1[col]
@@ -121,59 +54,94 @@ def inverse(a):
     for i in range(len(tmp)):
         ret.append(tmp[i][len(tmp[i])//2:])
     return ret
-# printMatrix(convertToCanonical(fm,d))
-
-
 
 def matrixMultiplication(A,B):
     return [[sum(a*b for a,b in zip(X_row,Y_col)) for Y_col in zip(*B)] for X_row in A]
 
 def ensureCommonDenom(l):
-    highestDenom = 0
-    numerators = []
 
-    for val in l:
-        if val.denominator > highestDenom:
-            highestDenom = val.denominator
+    #Get GCD of list:
+    GCD = 0
+    commonDenom = 0
+    for i in range(len(l)-1):
+        if l[i]:
+            tGCD = gcd(l[i].denominator,l[i+1].denominator)
+            if tGCD > GCD:
+                GCD = tGCD
+            tcd = (l[i].denominator * l[i+1].denominator)/GCD
+            if tcd > commonDenom:
+                commonDenom = tcd
+    l = [(i * commonDenom).numerator for i in l]
+    l.append(commonDenom)
+    return l
 
-    for val in l:
-        if val.denominator < highestDenom:
-            factor = highestDenom / val.denominator
-            numerators.append(val.numerator*factor)
+def convertToFrac(g):
+    FracMatrix = []
+    denoms = []
+    counter = 0
+    for row in g:
+        denom = sum(row)
+        denoms.append(denom)
+        rowToAdd = [Fraction(val, denom) if val > 0 else val for val in row]
+        if denom == 0:
+            rowToAdd[counter] = 1
+            denoms[counter] = 1
+
+        FracMatrix.append(rowToAdd)
+        counter += 1
+
+    return FracMatrix, denoms
+
+
+def stdConv(g):
+    absorbing = []
+    transient = []
+    # print(d)
+    # printMatrix(g)
+    for i in range(len(g)):
+        if sum(g[i]) == 0:
+            absorbing.append(i)
         else:
-            numerators.append(val.numerator)
+            transient.append(i)
+    matrixKey = absorbing + transient
+    standardM = []
+    for val in matrixKey:
+        standardM.append([0] * len(matrixKey))
 
-    return numerators, highestDenom
+    for i in range(len(matrixKey)):
+        for j in range(len(matrixKey)):
+            standardM[i][j] = g[matrixKey[i]][matrixKey[j]]
+
+    return standardM, len(absorbing), len(transient)
 
 
-def solution(M):
-    if(len(M)) == 1:
+def solution(m):
+
+    if sum(m[0]) == 0:
         return [1,1]
+    MM, abs, trans = stdConv(m)
 
-    #convert the matrix to a proper Markov chain matrix
-    M, D = convertToFrac(M)
-    if D[0] == 1:
-        return [1]+[0]*(len(D)-1)+[1]
-    #convert the matrix to cannonical form, extract the different quandrants. M = canonicla matrix, R = transient -> terminal prob matrix, TTM transient -> transient matrix
-    CM, absorbing, transient = convertToCanonical(M,D)
-    I = generateIdentityMatrix(transient)
-    RQ = CM[absorbing:]
+    M1, D1 = convertToFrac(MM)
+    # print(M1)
+    RQ = M1[abs:]
     R = []
     Q = []
+
     for row in RQ:
-        R.append(row[:absorbing])
-        Q.append(row[absorbing:])
+        R.append(row[:abs])
+        Q.append(row[abs:])
+    I = generateIdentityMatrix(trans)
+    F = inverse(subtractFromIdentity(Q,I))
 
-    temp = subtractFromIdentity(Q,I)
-    temp = inverse(temp)
-    SolutionMatrix = matrixMultiplication(temp,R)
-
-    terminalProbs,denom = ensureCommonDenom(SolutionMatrix[0])
-    terminalProbs.append(denom)
-
-    terminalProbs = [int(val) for val in terminalProbs]
-    return terminalProbs
+    FR = matrixMultiplication(F, R)
+    return ensureCommonDenom(FR[0])
 
 
+
+g = [[0, 1, 0, 0, 0, 1],
+     [4, 0, 0, 3, 2, 0],
+     [0, 0, 0, 0, 0, 0],
+     [0, 0, 0, 0, 0, 0],
+     [0, 0, 0, 0, 0, 0],
+     [0, 0, 0, 0, 0, 0]]
 print(solution(g))
-print(solution([[1]]))
