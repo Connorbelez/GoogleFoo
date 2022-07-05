@@ -34,35 +34,44 @@ def convertToFrac(g):
 
     return FracMatrix,denoms
 
-def convertToCanonical(g,denoms):
+def convertToCanonical(g,d):
 
-    canonM = []
-    Q = []
-    R = []
-    numTransient = len(denoms) - denoms.count(1)
-    # print(numTransient)
+    absorbing = []
+    transient = []
+    # print(d)
+    for i in range(len(d)):
+        if d[i] == 1:
+            absorbing.append(i)
+        else:
+            transient.append(i)
+    matrixKey = absorbing+transient
+    standardM = []
+    for val in matrixKey:
+        standardM.append([0]*len(matrixKey))
 
+    for i in range(len(matrixKey)):
+        for j in range(len(matrixKey)):
+            standardM[i][j] = g[matrixKey[i]][matrixKey[j]]
+
+    return standardM, len(absorbing), len(transient)
 
     # printMatrix(R)
     return canonM, Q, R
 
-def printMatrix(g):
-    for row in g:
-        for val in row:
-            print val,
-        print
+# def printMatrix(g):
+#     for row in g:
+#         for val in row:
+#             print val,
+#         print
 
 # printMatrix([[1,2,3],[4,5,6]])
 
 
 def generateIdentityMatrix(g):
-    rows = len(g)
-    colloumns = len(g[0])
-    r = [0]*colloumns
     Q = []
-    for i in range(rows):
+    for i in range(g):
         row = []
-        for j in range(colloumns):
+        for j in range(g):
             if j == i:
                 row.append(1)
             else:
@@ -114,21 +123,10 @@ def inverse(a):
     return ret
 # printMatrix(convertToCanonical(fm,d))
 
-# def MM(X,Y):
-#     G = [[0 for i in range(len(Y[0]))] for j in range(len(X))]
-#     for i in range(len(G)): #Rows of X = rows of G
-#         for j in range(len(G[0])): #coloumns of G == coloumns of Y
-#             for k in range(len(Y)): #rows of Y == coloumns of X, k = (y-row index) and (x-coloumn index) ie this gives us the kth element of teh ith row of x and trhwe
-#                 G[i][j] += X[i][k] * Y[k][j]
-#
-#     return G
-#
-#
+
+
 def matrixMultiplication(A,B):
     return [[sum(a*b for a,b in zip(X_row,Y_col)) for Y_col in zip(*B)] for X_row in A]
-
-
-
 
 def ensureCommonDenom(l):
     highestDenom = 0
@@ -157,18 +155,23 @@ def solution(M):
     if D[0] == 1:
         return [1]+[0]*(len(D)-1)+[1]
     #convert the matrix to cannonical form, extract the different quandrants. M = canonicla matrix, R = transient -> terminal prob matrix, TTM transient -> transient matrix
-    CM, TTM, TTA = convertToCanonical(M,D)
-    I = generateIdentityMatrix(TTM)
-    temp = subtractFromIdentity(TTM,I)
-    temp = inverse(temp)
-    SolutionMatrix = matrixMultiplication(temp,TTA)
+    CM, absorbing, transient = convertToCanonical(M,D)
+    I = generateIdentityMatrix(transient)
+    RQ = CM[absorbing:]
+    R = []
+    Q = []
+    for row in RQ:
+        R.append(row[:absorbing])
+        Q.append(row[absorbing:])
 
-    # printMatrix(SolutionMatrix)
+    temp = subtractFromIdentity(Q,I)
+    temp = inverse(temp)
+    SolutionMatrix = matrixMultiplication(temp,R)
 
     terminalProbs,denom = ensureCommonDenom(SolutionMatrix[0])
     terminalProbs.append(denom)
 
-    # print(terminalProbs)
+    terminalProbs = [int(val) for val in terminalProbs]
     return terminalProbs
 
 
